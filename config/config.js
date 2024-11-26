@@ -1,4 +1,5 @@
 require('dotenv').config()
+const mysql2 = require('mysql2');
 module.exports =
 {
   "development": {
@@ -6,7 +7,8 @@ module.exports =
     "password": null,
     "database": "sales-admin",
     "host": "localhost",
-    "dialect": "mysql"
+    "dialect": "mysql",
+    "dialectModule" : mysql2
   },
   "test": {
     "username": "root",
@@ -21,6 +23,7 @@ module.exports =
     "database": process.env.DB_NAME,
     "host": process.env.DB_HOST,
     "dialect": "mysql",
+    "dialectModule" : mysql2,
     "port": 19057
   }
 }
