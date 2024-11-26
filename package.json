@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node ./bin/www",
     "sequelize": "sequelize",
-    "build": "npm install && sequelize-cli db:migrate --env production",
+    "build": "npm install ",
     "vercel-build": "npm install mysql2 && npm run build"
   },
   "dependencies": {
