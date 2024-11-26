@@ -58,7 +58,7 @@ app.ws("/api/ws", async (ws, req) => {
   // Optional: Handle WebSocket error event
   ws.on('error', (err) => {
     console.error(`WebSocket error for token ${token}:`, err);
-    wsClient.delete(token); // Clean up on error
+    wsClient.delete(token);
   });
 });
 
