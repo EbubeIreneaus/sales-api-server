@@ -6,7 +6,7 @@
     "start": "node ./bin/www",
     "sequelize": "sequelize",
     "build": "npm install && sequelize-cli db:migrate --env production",
-    "vercel-build": "npm install && npm run build"
+    "vercel-build": "npm install mysql2 && npm run build"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
