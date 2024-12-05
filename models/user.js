@@ -20,6 +20,9 @@ module.exports = (sequelize, DataTypes) => {
         as: 'viewedNotifications',
         otherKey: 'notificationId'
       })
+      users.belongsTo(models.Ratings, {
+        foreignKey: 'userId'
+      })
     }
   }
   users.init({

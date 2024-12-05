@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: true,
     updatedAt: false,
     freezeTableName: true,
-    tableName: 'notification'
+    tableName: 'notifications'
   });
   return Notifications;
 };

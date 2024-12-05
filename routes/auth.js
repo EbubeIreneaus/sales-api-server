@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const router = express.Router();
 const conn = require("../db");
@@ -99,7 +100,15 @@ router.post(
 
       await user.update({ auth_key });
 
-      return res.status(200).json({ status: true, auth_key: auth_key });
+      return res
+        .cookie("authKey", user.auth_key, {
+          domain: process.env.ENVIROMENT ? 'localhost' : '',
+          httpOnly: process.env.ENVIROMENT? false : true,
+          secure: process.env.ENVIROMENT? false: true,
+          sameSite: 'lax'
+        })
+        .status(200)
+        .json({ status: true });
 
     } catch (error) {
       res.status(500).json({

@@ -6,7 +6,7 @@
     "start": "node ./bin/www",
     "sequelize": "sequelize",
     "build": "npm install ",
-    "vercel-build": "npm install mysql2 && npm run build"
+    "vercel-build": "npm run build"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -17,13 +17,13 @@
     "express": "~4.16.1",
     "express-ws": "^5.0.2",
     "http-errors": "~1.6.3",
-    "jade": "~1.11.0",
     "joi": "^17.13.3",
     "morgan": "~1.9.1",
     "multer": "^1.4.5-lts.1",
     "mysql": "^2.18.1",
     "mysql2": "^3.11.4",
     "nodemon": "^3.1.7",
+    "sanitize-html": "^2.13.1",
     "sequelize": "^6.37.5",
     "sequelize-cli": "^6.6.2",
     "uuid": "^11.0.2"

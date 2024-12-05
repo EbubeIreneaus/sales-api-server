@@ -9,9 +9,8 @@ const {
   sequelize,
   Sold_Products: soldProducts,
   Products,
-  Users
+  Users,
 } = require("../models");
-
 
 // router.use(authenticate);
 
@@ -24,28 +23,25 @@ var productSchema = Joi.object({
 var saleSchema = Joi.object({
   paid: Joi.boolean(),
   cash: Joi.boolean(),
-  website: Joi.boolean()
-})
+  website: Joi.boolean(),
+});
 
 var productsSchema = Joi.array().items(productSchema);
 
-
 function generateSalesId(req, res, next) {
-  function attemptGenerateId() {
-    const randomId = Math.floor(100000 + Math.random() * 9000000); // Generate 6-7 digit random number
-    const sql = "SELECT COUNT(*) as count FROM sales WHERE salesId = ?";
+  async function attemptGenerateId() {
 
-    conn.query(sql, [randomId], (err, result) => {
-      if (err) {
-        return next(err);
-      }
-      if (result[0].count === 0) {
-        req.salesId = randomId;
-        return next();
-      } else {
-        attemptGenerateId();
-      }
-    });
+    const randomId = Math.floor(100000 + Math.random() * 9000000); // Generate 6-7 digit random
+
+    let re = await Sales.findOne({ where: { salesId: randomId } });
+
+    if (re) {
+      return attemptGenerateId();
+    }
+
+    req.salesId = randomId;
+
+    return next();
   }
 
   attemptGenerateId();
@@ -56,8 +52,11 @@ router.put(
   "",
   [generateSalesId, authenticate],
   (req, res, next) => {
-    const { error: productError, value: productValue } = productsSchema.validate(req.body.new_products);
-    const { error: saleError, value: saleValue } = saleSchema.validate(req.body.sale);
+    const { error: productError, value: productValue } =
+      productsSchema.validate(req.body.new_products);
+    const { error: saleError, value: saleValue } = saleSchema.validate(
+      req.body.sale
+    );
     if (productError) {
       return res
         .status(422)
@@ -69,14 +68,17 @@ router.put(
         .status(422)
         .json({ status: false, msg: saleError.details[0].message });
     }
-    req.body = {products: productValue, sale: saleValue};
+    req.body = { products: productValue, sale: saleValue };
     next();
   },
   async (req, res) => {
     const salesId = req.salesId;
     const t = await sequelize.transaction();
     try {
-      let sale = await Sales.create({ salesId: salesId, ...req.body.sale, userId: req.user.id }, { transaction: t });
+      let sale = await Sales.create(
+        { salesId: salesId, ...req.body.sale, userId: req.user.id },
+        { transaction: t }
+      );
 
       for (const pd of req.body.products) {
         const sold_product = await soldProducts.create(
@@ -88,25 +90,24 @@ router.put(
 
       const sales = await Sales.findOne({
         where: {
-          salesId: sale.salesId
+          salesId: sale.salesId,
         },
         include: [
           {
             model: soldProducts,
-            as: 'sold_products',
-            attributes: {exclude: ['salesId']},
-            include : {
+            as: "sold_products",
+            attributes: { exclude: ["salesId"] },
+            include: {
               model: Products,
-              attributes: ['name', 'unit_price'],
-              as: 'product'
+              attributes: ["name", "unit_price"],
+              as: "product",
             },
-            
           },
           {
             model: Users,
-            as: 'user',
-            attributes: ['firstname', 'lastname', 'username', 'admin', 'staff']
-          }
+            as: "user",
+            attributes: ["firstname", "lastname", "username", "admin", "staff"],
+          },
         ],
         attributes: {
           include: [
@@ -119,9 +120,8 @@ router.put(
               "amount",
             ],
           ],
-          exclude: ['userId', 'UserId']
+          exclude: ["userId", "UserId"],
         },
-        
       });
 
       req.wsClients.forEach((cl) => {
@@ -146,20 +146,19 @@ router.get("/all", async (req, res) => {
     include: [
       {
         model: soldProducts,
-        attributes: {exclude: ['salesId']},
-        as: 'sold_products',
-        include : {
+        attributes: { exclude: ["salesId"] },
+        as: "sold_products",
+        include: {
           model: Products,
-          attributes: ['name', 'unit_price'],
-          as: 'product'
+          attributes: ["name", "unit_price"],
+          as: "product",
         },
-        
       },
       {
         model: Users,
-        as: 'user',
-        attributes: ['firstname', 'lastname', 'username', 'admin', 'staff']
-      }
+        as: "user",
+        attributes: ["firstname", "lastname", "username", "admin", "staff"],
+      },
     ],
     attributes: {
       include: [
@@ -172,9 +171,8 @@ router.get("/all", async (req, res) => {
           "amount",
         ],
       ],
-      exclude: ['userId', 'UserId']
+      exclude: ["userId", "UserId"],
     },
-    
   });
   if (sales) {
     return res.status(200).json({ status: true, data: sales });

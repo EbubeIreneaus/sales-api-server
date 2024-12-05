@@ -1,7 +1,7 @@
 var express = require("express");
 var router = express.Router();
 const authenticate = require("../authentication");
-
+const sanitizeHtml = require("sanitize-html");
 var Joi = require("joi");
 var conn = require("../db");
 var multer = require("multer");
@@ -26,9 +26,35 @@ const productSchema = Joi.object({
   id: Joi.number().integer(),
 });
 
+const storeProductSchema = Joi.object({
+  id: Joi.number().integer(),
+  long_title: Joi.string().allow("", null).alphanum(),
+  category: Joi.string().lowercase().trim(),
+  sub_category: Joi.string().lowercase().trim(),
+  store: Joi.boolean(),
+  desc: Joi.string()
+    .custom((value, helpers) => {
+      const sanitized = sanitizeHtml(value, {
+        allowedTags: ["b", "i", "em", "strong", "a", "p", "div"],
+        allowedAttributes: {
+          a: ["href", "title"],
+          "*": ["style"],
+        },
+      });
+
+      if (!sanitized.trim()) {
+        return helpers.error("string.empty", { value });
+      }
+
+      return sanitized; // Return the sanitized HTML
+    }, "Sanitize HTML")
+    .required(),
+});
+
 const productsSchema = Joi.array().items(productSchema);
 
 const { Products } = require("../models");
+const admin_authentication = require("../admin_authentication");
 
 // router.ws("/ws", (ws, req) => {
 //   clients.push(ws);
@@ -174,9 +200,7 @@ router.post(
       if (product) {
         await product.update({ name, unit_price, quantity });
         req.wsClients.forEach((cl) => {
-          cl.send(
-            JSON.stringify({ msg: "product_updated", product: req.body })
-          );
+          cl.send(JSON.stringify({ msg: "product_updated", product: product }));
         });
         return res.status(200).json({ status: true });
       }
@@ -186,6 +210,53 @@ router.post(
       });
     } catch (error) {
       return res.status(500).json({ status: false, msg: error.message });
+    }
+  }
+);
+
+// update product store info
+router.post(
+  "/updateStore",
+  [admin_authentication],
+  (req, res, next) => {
+    const data = req.body;
+
+    const { error, value } = storeProductSchema.validate(data);
+    if (error) {
+      return res
+        .status(422)
+        .json({ status: false, msg: error.details[0].message });
+    }
+    req.body = value;
+    next();
+  },
+  async (req, res) => {
+    const data = req.body;
+    try {
+      const product = await Products.findOne({
+        where: {
+          id: data.id,
+        },
+      });
+
+      if (product) {
+        await product.update({ ...data });
+
+        req.wsClients.forEach((cl) => {
+          cl.send(JSON.stringify({ msg: "product_updated", product: product }));
+        });
+
+        return res
+        .status(200)
+        .json({ status: true, msg: "product updated successfully" });
+      }
+
+      return res
+        .status(422)
+        .json({ status: false, msg: "product not found" });
+      
+    } catch (error) {
+      res.status(500).json({ status: false, msg: error.message });
     }
   }
 );
