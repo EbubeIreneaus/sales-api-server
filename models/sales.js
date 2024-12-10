@@ -13,7 +13,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "salesId",
         as: 'sold_products'
       });
-
+      Sales.hasOne(models.Address, {
+        foreignKey: 'salesId',
+        as: 'address'
+      })
       Sales.belongsTo(models.Users, {
         foreignKey: 'userId',
         as: 'user'

@@ -17,7 +17,7 @@ var ntRouter = require("./routes/notification");
 var storeRouter = require("./routes/web/index");
 
 const allowOrigin = [
-  "http://localhost:9001",
+  "http://localhost:9150",
   "http://localhost:9000",
   "http://localhost:3000",
   "https://f-store-demo.netlify.app",

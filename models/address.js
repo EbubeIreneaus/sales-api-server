@@ -14,7 +14,9 @@ module.exports = (sequelize, DataTypes) => {
       address.belongsTo(models.Users, {
         foreignKey: 'userId',
         as: 'user'
-      })
+      }),
+
+      address.belongsTo(models.Sales)
     }
   }
   address.init({
@@ -30,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
     modelName: 'Address',
     timestamps: false,
     freezeTableName: true,
-    tableName: 'address'
+    tableName: 'addresses'
   });
   return address;
 };

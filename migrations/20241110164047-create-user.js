@@ -19,16 +19,16 @@ module.exports = {
       },
       username: {
         type: Sequelize.STRING,
-        unique: true,
         allowNull: false
       },
       psw: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: false,
       },
       email: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: false,
+        unique: true
       },
       staff: {
         type: Sequelize.BOOLEAN,

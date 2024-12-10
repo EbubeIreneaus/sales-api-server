@@ -6,6 +6,7 @@ const Joi = require("joi");
 var bcrypt = require("bcryptjs");
 var { v4: uuid4 } = require("uuid");
 const authenticate = require("../authentication");
+const jwt = require('jsonwebtoken')
 var multer = require("multer");
 
 var storage = multer.diskStorage({
@@ -18,6 +19,8 @@ var storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage: storage });
+
+const jwt_secret = process.env.JSON_WEB_SECRET
 
 var { Users } = require("../models/index");
 
@@ -72,7 +75,7 @@ router.post(
     const { username, password } = req.body;
 
     try {
-      const user = await Users.findOne({ where: { username: username } });
+      const user = await Users.findOne({ where: { username: username }, attributes: ['id', 'psw', 'active', 'auth_key', 'admin', 'username'] });
 
       if (!user) {
         res
@@ -96,13 +99,11 @@ router.post(
           .json({ status: false, msg: "this user have no access." });
       }
 
-      const auth_key = uuid4();
-
-      await user.update({ auth_key });
+      const token = jwt.sign({'userId': user.id}, jwt_secret, {expiresIn: ''})
 
       return res
         .cookie("authKey", user.auth_key, {
-          domain: process.env.ENVIROMENT ? 'localhost' : '',
+          domain: process.env.ENVIROMENT ? 'localhost' : process.env.CLIENT_HOST || undefined,
           httpOnly: process.env.ENVIROMENT? false : true,
           secure: process.env.ENVIROMENT? false: true,
           sameSite: 'lax'
