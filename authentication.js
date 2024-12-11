@@ -9,7 +9,9 @@ async function authenticate(req, res, next) {
 
   try {
     
-    const authkey = req.cookies.authKey
+    let authkey = req.headers.Authorization || req.headers.authorization
+    authkey = authkey.split(' ')[1]
+   
     const token = jwt.verify(authkey, jwt_secret)
     const user = await Users.findOne({
 
@@ -34,7 +36,7 @@ async function authenticate(req, res, next) {
   } catch (error) {
     return res
       .status(422)
-      .json({ status: false, msg: "could not authenticate this user" });
+      .json({ status: false, msg: "could not authenticate this user"+ error.message});
   }
 
 }
