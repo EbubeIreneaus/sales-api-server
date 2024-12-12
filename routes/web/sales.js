@@ -4,7 +4,13 @@ const router = express.Router();
 const Flutterwave = require("flutterwave-node-v3");
 var Joi = require("joi");
 
-const { Sales, Sold_Products, Addresses, sequelize } = require("../../models");
+const {
+  Sales,
+  Sold_Products,
+  Addresses,
+  Products,
+  sequelize,
+} = require("../../models");
 const authenticate = require("../../authentication");
 
 const saleProductSchema = Joi.object({
@@ -15,10 +21,10 @@ const saleProductSchema = Joi.object({
 
 const saleProductsSchema = Joi.array().items(saleProductSchema);
 const addressSchema = Joi.object({
-  state: Joi.string().alphanum().required().lowercase(),
-  city: Joi.string().alphanum().required().lowercase().allow('-'),
-  address1: Joi.string().required().lowercase().allow('-'),
-  address2: Joi.string().lowercase().allow('-'),
+  state: Joi.string().required().lowercase(),
+  city: Joi.string().allow("-").required().lowercase(),
+  address1: Joi.string().allow("-").required().lowercase(),
+  address2: Joi.string().allow("-").allow(null).lowercase(),
   phone1: Joi.number().integer().required(),
   phone2: Joi.number().allow(null),
 });
@@ -163,39 +169,109 @@ router.post("/updatePayment", async (req, res) => {
     });
 
     if (!Sale) {
-      return res
-        .status(422)
-        .json({
-          success: false,
-          msg: "order matching details not found on our server",
-        });
+      return res.status(422).json({
+        success: false,
+        msg: "order matching details not found on our server",
+      });
     }
 
     // Sale.amount returning undefined
     // Jsonifying it worked for me
-    
-    let sale = JSON.stringify(Sale)
-    sale = JSON.parse(sale)
+
+    let sale = JSON.stringify(Sale);
+    sale = JSON.parse(sale);
 
     flw.Transaction.verify({ id: parseInt(req.body.transaction_id) })
       .then(async (response) => {
         if (
           response.data.status === "successful" &&
           response.data.amount >= sale.amount &&
-          response.data.currency === 'NGN' &&
+          response.data.currency === "NGN" &&
           response.data.tx_ref == sale.salesId
         ) {
-          await Sale.update({paid: true})
-          return res.status(200).json({success: true})
+          await Sale.update({ paid: true });
+          return res.status(200).json({ success: true });
         } else {
-          return res.status(400).json({success: false, msg: 'Payment matching details not found', res: response, sale: sale})
+          return res.status(400).json({
+            success: false,
+            msg: "Payment matching details not found",
+            res: response,
+            sale: sale,
+          });
         }
       })
       .catch((err) => {
-        return res.status(400).json({success: false, msg: err.message})
+        return res.status(400).json({ success: false, msg: err.message });
       });
   } catch (error) {
-    return res.status(500).json({success: false, msg: error.message})
+    return res.status(500).json({ success: false, msg: error.message });
+  }
+});
+
+router.get("/orders", authenticate, async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const sale = await Sales.findAll({
+      where: {
+        userId: userId,
+      },
+      attributes: {
+        exclude: ["UserId"],
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT SUM(sp.amount) 
+              FROM sold_products sp 
+              WHERE sp.salesId = Sales.salesId
+            )`),
+            "amount",
+          ],
+        ],
+      },
+    });
+    res.status(200).json({ success: true, data: sale });
+  } catch (error) {
+    res.status(500).json({ success: false, msg: error.message });
+  }
+});
+
+router.get("/orderDetails", async (req, res) => {
+  const { salesId } = req.query;
+  try {
+    const sale = await Sales.findOne({
+      where: { salesId: parseInt(salesId) },
+      attributes: {
+        exclude: ["userId", "UserId"],
+        include: [
+          [
+            sequelize.literal(`(
+            SELECT SUM(sp.amount) 
+            FROM sold_products sp 
+            WHERE sp.salesId = Sales.salesId
+          )`),
+            "amount",
+          ],
+        ],
+      },
+      include: [
+        {
+          model: Sold_Products,
+          as: "sold_products",
+          attributes: ["quantity", "amount"],
+          include: [
+            {
+              model: Products,
+              as: "product",
+              attributes: ["id", "market_price", "name", "long_title"],
+            },
+          ],
+        },
+      ],
+    });
+    return res.status(200).json({ success: true, data: sale });
+  } catch (error) {
+    return res.status(500).json({ success: false, msg: error.message });
   }
 });
 
