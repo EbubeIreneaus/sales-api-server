@@ -13,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "productId",
         onDelete: 'SET NULL'
       });
+      Products.hasOne(models.Favorite, {
+        foreignKey: 'productId',
+        onDelete: 'SET NULL'
+      })
       Products.hasOne(models.Rating, {
         as: 'rating',
         foreignKey: 'productId'

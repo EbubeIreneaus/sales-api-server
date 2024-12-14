@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
       users.hasOne(models.Expenses)
       users.hasOne(models.Sales)
       users.hasOne(models.Address)
+      users.hasMany(models.Favorite, {
+        foreignKey: 'userId',
+        as: 'favorites'
+      })
       users.belongsToMany(models.Notifications, {
         through: models.NotificationViewers,
         foreignKey: 'userId',
