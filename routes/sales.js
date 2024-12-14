@@ -11,6 +11,7 @@ const {
   Products,
   Users,
 } = require("../models");
+const admin_authentication = require("../admin_authentication");
 
 // router.use(authenticate);
 
@@ -50,7 +51,7 @@ function generateSalesId(req, res, next) {
 // add to sales
 router.put(
   "",
-  [generateSalesId, authenticate],
+  [generateSalesId, admin_authentication],
   (req, res, next) => {
     const { error: productError, value: productValue } =
       productsSchema.validate(req.body.new_products);

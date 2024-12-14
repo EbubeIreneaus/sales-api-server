@@ -1,4 +1,6 @@
+require('dotenv').config()
 const conn = require("./db");
+const jwt = require('jsonwebtoken')
 var { Users } = require("./models");
 var { Op } = require("sequelize");
 
@@ -6,13 +8,14 @@ async function admin_authentication(req, res, next) {
 
   try {
     
-    const authkey = req.cookies.authKey
-
+    let authkey = req.headers.Authorization || req.headers.authorization
+    authkey = authkey.split(' ')[1]
+    const token = jwt.verify(authkey, process.env.JSON_WEB_SECRET)
     const user = await Users.findOne({
 
-      where: { auth_key: authkey, active: true },
+      where: { id: token.userId, active: true },
 
-      attributes: { exclude: ["psw", "auth_key"] },
+      attributes: { exclude: ["psw", "auth_key", "userId"] },
 
     });
 
@@ -33,7 +36,7 @@ async function admin_authentication(req, res, next) {
 
     return res
       .status(422) 
-      .json({ status: false, msg: "could not authenticate this user "+error.message });
+      .json({ status: false, msg: "could not authenticate this user"});
   }
 
 }

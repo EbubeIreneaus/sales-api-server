@@ -10,10 +10,11 @@ const expenseSchema = Joi.object({
   userId: Joi.number().integer().required(),
 });
 const { Expenses, Users, Notifications } = require("../models");
+const admin_authentication = require("../admin_authentication");
 
 router.put(
   "/",
-  [authenticate],
+  [admin_authentication],
 
   (req, res, next) => {
     const userId = req.user.id;

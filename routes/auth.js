@@ -6,7 +6,7 @@ const Joi = require("joi");
 var bcrypt = require("bcryptjs");
 var { v4: uuid4 } = require("uuid");
 const authenticate = require("../authentication");
-const jwt = require('jsonwebtoken')
+const jwt = require("jsonwebtoken");
 var multer = require("multer");
 
 var storage = multer.diskStorage({
@@ -20,9 +20,10 @@ var storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-const jwt_secret = process.env.JSON_WEB_SECRET
+const jwt_secret = process.env.JSON_WEB_SECRET;
 
 var { Users } = require("../models/index");
+const admin_authentication = require("../admin_authentication");
 
 const loginSchema = Joi.object({
   username: Joi.string().alphanum().required().trim(),
@@ -68,52 +69,48 @@ router.post(
       req.body = value;
       next();
     } else {
-      res.send({ status: false, msg: error.details[0].message });
+      return res.send({ success: false, msg: error.details[0].message });
     }
   },
   async (req, res) => {
     const { username, password } = req.body;
 
     try {
-      const user = await Users.findOne({ where: { username: username }, attributes: ['id', 'psw', 'active', 'auth_key', 'admin', 'username'] });
+      const user = await Users.findOne({
+        where: { username: username },
+        attributes: ["id", "psw", "active", "admin", "username"],
+      });
 
       if (!user) {
         res
           .status(404)
-          .json({ status: false, msg: "no such user found on this server" });
+          .json({ success: false, msg: "no such user found on this server" });
       }
 
-      const { id, psw, active } = user;
+      const { psw, active } = user;
 
       const is_valid_password = await bcrypt.compare(password, psw);
 
       if (!is_valid_password) {
         return res
           .status(404)
-          .json({ status: false, msg: "Incorrect password for this user" });
+          .json({ success: false, msg: "Incorrect password for this user" });
       }
 
       if (!active) {
         return res
           .status(200)
-          .json({ status: false, msg: "this user have no access." });
+          .json({ success: false, msg: "this user have no access." });
       }
 
-      const token = jwt.sign({'userId': user.id}, jwt_secret, {expiresIn: ''})
+      const token = jwt.sign({ userId: user.id }, jwt_secret, {
+        expiresIn: "12h",
+      });
 
-      return res
-        .cookie("authKey", user.auth_key, {
-          domain: process.env.ENVIROMENT ? 'localhost' : process.env.CLIENT_HOST || undefined,
-          httpOnly: process.env.ENVIROMENT? false : true,
-          secure: process.env.ENVIROMENT? false: true,
-          sameSite: 'lax'
-        })
-        .status(200)
-        .json({ status: true });
-
+      return res.status(200).json({ success: true, token: token });
     } catch (error) {
       res.status(500).json({
-        status: false,
+        success: false,
         msg: error.message,
       });
     }
@@ -123,7 +120,7 @@ router.post(
 router.put(
   "/",
 
-  [authenticate],
+  admin_authentication,
 
   (req, res, next) => {
     const { body } = req;
@@ -161,11 +158,11 @@ router.put(
   }
 );
 
-router.get("/", [authenticate], async (req, res) => {
+router.get("/", admin_authentication, async (req, res) => {
   try {
     const user = await Users.findByPk(req.user.id, {
       attributes: {
-        exclude: ["psw", "auth_key"],
+        exclude: ["psw", "auth_key", "userId"],
       },
     });
 
@@ -181,15 +178,13 @@ router.get("/", [authenticate], async (req, res) => {
 // update profile pics
 router.post(
   "/updateProfilepics",
-  [authenticate],
+  admin_authentication,
   upload.single("profile_pics"),
   async (req, res) => {
     try {
-      const user = await Users.findByPk(req.user.id);
-      if (user) {
-        await user.update({ profile_pics: req.file.filename });
-        return res.status(200).json({ status: true });
-      }
+      await req.user.update({ profile_pics: req.file.filename });
+      return res.status(200).json({ status: true });
+
       res.status(400).json({ status: false, msg: "user not found" });
     } catch (error) {
       console.log(error.message);
@@ -201,7 +196,7 @@ router.post(
 
 router.post(
   "/update/psw",
-  [authenticate],
+  admin_authentication,
   (req, res, next) => {
     const { error } = pswSchema.validate(req.body);
     if (error) {
@@ -233,7 +228,7 @@ router.post(
 // make user an admin
 router.post(
   "/makeAdmin",
-  [authenticate],
+  [admin_authentication],
   (req, res, next) => {
     if (req.user.admin) {
       next();
@@ -248,6 +243,7 @@ router.post(
     try {
       const staff = await Users.findOne({
         where: { id: staffId },
+        attributes: {exclude: ['userId', 'psw', 'auth_key']}
       });
       if (staff) {
         if (!staff.admin) {
@@ -265,7 +261,7 @@ router.post(
 // remove admin
 router.post(
   "/removeAdmin",
-  [authenticate],
+  [admin_authentication],
   (req, res, next) => {
     if (req.user.admin) {
       next();
@@ -280,6 +276,7 @@ router.post(
     try {
       const staff = await Users.findOne({
         where: { id: staffId },
+        attributes: {exclude: ['userId', 'psw', 'auth_key']}
       });
       if (staff) {
         if (staff.admin) {
@@ -297,7 +294,7 @@ router.post(
 // deactivate user
 router.post(
   "/deactivate",
-  [authenticate],
+  [admin_authentication],
   (req, res, next) => {
     if (req.user.admin) {
       next();
@@ -312,6 +309,7 @@ router.post(
     try {
       const user = await Users.findOne({
         where: { id: userId },
+        attributes: {exclude: ['userId', 'psw', 'auth_key']}
       });
       if (user) {
         if (user.active) {
@@ -329,7 +327,7 @@ router.post(
 // reactivate user
 router.post(
   "/activate",
-  [authenticate],
+  [admin_authentication],
   (req, res, next) => {
     if (req.user.admin) {
       next();
@@ -344,6 +342,7 @@ router.post(
     try {
       const user = await Users.findOne({
         where: { id: userId },
+        attributes: {exclude: ['userId', 'psw', 'auth_key']}
       });
       if (user) {
         if (!user.active) {

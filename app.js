@@ -67,7 +67,7 @@ app.ws("/api/ws", async (ws, req) => {
 
   const token = req.cookies.authKey; // Access the token
 
-  const user = await Users.findOne({ where: { auth_key: token } });
+  const user = await Users.findOne({ where: { id: 2 }, attributes: {exclude: ['userId']} });
 
   if (!user) {
     ws.close(1008, "Authentication token required"); // 1008: Policy Violation

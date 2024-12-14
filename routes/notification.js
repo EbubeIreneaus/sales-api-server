@@ -3,8 +3,9 @@ const router = express.Router()
 const authenticate = require('../authentication')
 const {Notifications: nt, NotificationViewers: notificationViewers, Users: users, sequelize} =  require('../models')
 var { Op } = require('sequelize')
+const admin_authentication = require('../admin_authentication')
 
-router.get('/all', [authenticate], async (req, res) => {
+router.get('/all', admin_authentication, async (req, res) => {
     try {
         let notification;
     if (req.user.admin) {
@@ -29,7 +30,7 @@ router.get('/all', [authenticate], async (req, res) => {
     }
 })
 
-router.post('/viewed', [authenticate], async(req, res) => {
+router.post('/viewed', admin_authentication, async(req, res) => {
     try {
         let notification;
             if (req.user.admin) {

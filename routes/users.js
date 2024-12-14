@@ -4,14 +4,15 @@ var { Op } = require("sequelize");
 var router = express.Router();
 
 var { Users } = require("../models");
+const admin_authentication = require("../admin_authentication");
 
 /* GET users listing. */
-router.get("/all", [authenticate], async (req, res) => {
+router.get("/all", admin_authentication, async (req, res) => {
   const {id: userId} = req.user
   try {
     const users = await Users.findAll({
       where: { id: { [Op.ne]: userId} },
-      attributes: { exclude: ["psw", "auth_key"] },
+      attributes: { exclude: ["psw", "auth_key", 'userId'] },
     });
     if (users) {
       return res.status(200).json({status: true, users: users, me: req.user})

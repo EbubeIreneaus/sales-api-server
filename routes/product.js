@@ -116,7 +116,7 @@ router.get("/all", async (req, res) => {
 // update image
 router.post(
   "/updateImage",
-  [authenticate],
+  admin_authentication,
   upload.single("file"),
   async (req, res) => {
     try {
@@ -150,7 +150,7 @@ router.post(
 );
 
 // delete a product
-router.delete("/", [authenticate], async (req, res) => {
+router.delete("/", admin_authentication, async (req, res) => {
   const { productId } = req.body;
   try {
     const product = await Products.destroy({
@@ -175,7 +175,7 @@ router.delete("/", [authenticate], async (req, res) => {
 // update a product
 router.post(
   "/updateProductData",
-  [authenticate],
+  admin_authentication,
 
   (req, res, next) => {
     const { error, value } = productSchema.validate(req.body);
@@ -217,7 +217,7 @@ router.post(
 // update product store info
 router.post(
   "/updateStore",
-  [admin_authentication],
+  admin_authentication,
   (req, res, next) => {
     const data = req.body;
 
